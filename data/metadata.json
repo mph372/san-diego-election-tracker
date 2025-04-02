@@ -5,6 +5,16 @@
         "batchNumber": 1,
         "timestamp": "2025-04-02T12:00:00",
         "filename": "election_results_20250402_1200.csv",
+        "ballotsCountedTotal": 0,
+        "mailBallots": 0,
+        "voteCenterBallots": 0,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 0
+      },
+      {
+        "batchNumber": 2,
+        "timestamp": "2025-04-03T12:00:00",
+        "filename": "election_results_20250403_1200.csv",
         "ballotsCountedTotal": 100000,
         "mailBallots": 75000,
         "voteCenterBallots": 25000,
