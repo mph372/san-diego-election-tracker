@@ -1,0 +1,15 @@
+{
+    "lastUpdated": "2025-04-02T12:00:00",
+    "updates": [
+      {
+        "batchNumber": 1,
+        "timestamp": "2025-04-02T12:00:00",
+        "filename": "election_results_20250402_1200.csv",
+        "ballotsCountedTotal": 100000,
+        "mailBallots": 75000,
+        "voteCenterBallots": 25000,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 273641
+      }
+    ]
+  }
