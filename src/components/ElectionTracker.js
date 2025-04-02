@@ -8,12 +8,14 @@ const ElectionTracker = () => {
   const [metadata, setMetadata] = useState(null);
   const [currentBatch, setCurrentBatch] = useState(null);
   const [electionResults, setElectionResults] = useState([]);
+  const [previousResults, setPreviousResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [batchesHistory, setBatchesHistory] = useState({});
 
   useEffect(() => {
-    // Fetch the metadata file with correct path handling
-    fetch(`${process.env.PUBLIC_URL}/data/metadata.json`)
+    // Fetch the metadata file
+    fetch('/data/metadata.json')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch metadata');
@@ -27,7 +29,7 @@ const ElectionTracker = () => {
         setCurrentBatch(latestUpdate);
         
         // Fetch the CSV file for the latest update
-        return fetch(`${process.env.PUBLIC_URL}/data/${latestUpdate.filename}`);
+        return fetch(`/data/${latestUpdate.filename}`);
       })
       .then(response => {
         if (!response.ok) {
@@ -41,7 +43,15 @@ const ElectionTracker = () => {
           header: true,
           dynamicTyping: true,
           complete: (results) => {
-            setElectionResults(results.data);
+            const currentResults = results.data.filter(item => item['Candidate Name']); // Filter out empty rows
+            setElectionResults(currentResults);
+            
+            // Store this batch in history
+            setBatchesHistory(prev => ({
+              ...prev,
+              [currentBatch.batchNumber]: currentResults
+            }));
+            
             setLoading(false);
           },
           error: (error) => {
@@ -62,16 +72,37 @@ const ElectionTracker = () => {
     const selectedBatch = metadata.updates.find(update => update.batchNumber === batchNumber);
     
     if (selectedBatch) {
+      // Store current results as previous before updating
+      if (currentBatch && currentBatch.batchNumber !== batchNumber) {
+        setPreviousResults(electionResults);
+      }
+      
       setCurrentBatch(selectedBatch);
       
-      fetch(`${process.env.PUBLIC_URL}/data/${selectedBatch.filename}`)
+      // Check if we already have this batch in our history
+      if (batchesHistory[batchNumber]) {
+        setElectionResults(batchesHistory[batchNumber]);
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch the CSV if we don't have it in history
+      fetch(`/data/${selectedBatch.filename}`)
         .then(response => response.text())
         .then(csvText => {
           Papa.parse(csvText, {
             header: true,
             dynamicTyping: true,
             complete: (results) => {
-              setElectionResults(results.data);
+              const newResults = results.data.filter(item => item['Candidate Name']); // Filter out empty rows
+              setElectionResults(newResults);
+              
+              // Store this batch in history
+              setBatchesHistory(prev => ({
+                ...prev,
+                [batchNumber]: newResults
+              }));
+              
               setLoading(false);
             },
             error: (error) => {
@@ -86,6 +117,50 @@ const ElectionTracker = () => {
         });
     }
   };
+
+  // Find previous batch data for comparison
+  useEffect(() => {
+    if (metadata && currentBatch) {
+      const currentIndex = metadata.updates.findIndex(update => update.batchNumber === currentBatch.batchNumber);
+      
+      // If there's a previous batch
+      if (currentIndex > 0) {
+        const previousBatch = metadata.updates[currentIndex - 1];
+        
+        // Check if we have it in history
+        if (batchesHistory[previousBatch.batchNumber]) {
+          setPreviousResults(batchesHistory[previousBatch.batchNumber]);
+        } else {
+          // Fetch it if not in history
+          fetch(`/data/${previousBatch.filename}`)
+            .then(response => response.text())
+            .then(csvText => {
+              Papa.parse(csvText, {
+                header: true,
+                dynamicTyping: true,
+                complete: (results) => {
+                  const prevResults = results.data.filter(item => item['Candidate Name']);
+                  setPreviousResults(prevResults);
+                  
+                  // Store in history
+                  setBatchesHistory(prev => ({
+                    ...prev,
+                    [previousBatch.batchNumber]: prevResults
+                  }));
+                }
+              });
+            })
+            .catch(err => {
+              console.error("Error fetching previous batch:", err);
+              setPreviousResults(null);
+            });
+        }
+      } else {
+        // No previous batch
+        setPreviousResults(null);
+      }
+    }
+  }, [currentBatch, metadata, batchesHistory]);
 
   if (loading) {
     return <div>Loading election data...</div>;
@@ -119,7 +194,10 @@ const ElectionTracker = () => {
       
       {electionResults.length > 0 && (
         <>
-          <ResultsTable results={electionResults} />
+          <ResultsTable 
+            results={electionResults} 
+            previousResults={previousResults} 
+          />
           <ResultsChart results={electionResults} />
         </>
       )}
