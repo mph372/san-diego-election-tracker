@@ -15,7 +15,7 @@ const ElectionTracker = () => {
 
   useEffect(() => {
     // Fetch the metadata file
-    fetch('/data/metadata.json')
+    fetch(`${process.env.PUBLIC_URL}/data/metadata.json`)
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch metadata');
@@ -24,32 +24,41 @@ const ElectionTracker = () => {
       })
       .then(data => {
         setMetadata(data);
-        // Get the most recent update
-        const latestUpdate = data.updates[data.updates.length - 1];
-        setCurrentBatch(latestUpdate);
         
-        // Fetch the CSV file for the latest update
-        return fetch(`/data/${latestUpdate.filename}`);
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch CSV data');
+        // Get the most recent update if it exists
+        if (data.updates && data.updates.length > 0) {
+          const latestUpdate = data.updates[data.updates.length - 1];
+          setCurrentBatch(latestUpdate);
+          
+          // Fetch the CSV file for the latest update
+          return fetch(`${process.env.PUBLIC_URL}/data/${latestUpdate.filename}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Failed to fetch CSV data');
+              }
+              return { csvResponse: response.text(), latestBatch: latestUpdate };
+            });
+        } else {
+          throw new Error('No updates found in metadata');
         }
-        return response.text();
       })
-      .then(csvText => {
+      .then(({ csvResponse, latestBatch }) => {
+        return csvResponse.then(text => ({ csvText: text, latestBatch }));
+      })
+      .then(({ csvText, latestBatch }) => {
         // Parse the CSV data
         Papa.parse(csvText, {
           header: true,
           dynamicTyping: true,
           complete: (results) => {
-            const currentResults = results.data.filter(item => item['Candidate Name']); // Filter out empty rows
+            // Filter out any rows without a candidate name (empty rows)
+            const currentResults = results.data.filter(item => item['Candidate Name']);
             setElectionResults(currentResults);
             
-            // Store this batch in history
+            // Store this batch in history using the batch we just loaded
             setBatchesHistory(prev => ({
               ...prev,
-              [currentBatch.batchNumber]: currentResults
+              [latestBatch.batchNumber]: currentResults
             }));
             
             setLoading(false);
@@ -68,39 +77,46 @@ const ElectionTracker = () => {
 
   // Function to load a specific batch
   const loadBatch = (batchNumber) => {
+    if (!metadata || !metadata.updates) return;
+    
     setLoading(true);
-    const selectedBatch = metadata.updates.find(update => update.batchNumber === batchNumber);
+    const selectedBatch = metadata.updates.find(update => update.batchNumber === parseInt(batchNumber));
     
     if (selectedBatch) {
       // Store current results as previous before updating
-      if (currentBatch && currentBatch.batchNumber !== batchNumber) {
+      if (currentBatch && currentBatch.batchNumber !== selectedBatch.batchNumber) {
         setPreviousResults(electionResults);
       }
       
       setCurrentBatch(selectedBatch);
       
       // Check if we already have this batch in our history
-      if (batchesHistory[batchNumber]) {
-        setElectionResults(batchesHistory[batchNumber]);
+      if (batchesHistory[selectedBatch.batchNumber]) {
+        setElectionResults(batchesHistory[selectedBatch.batchNumber]);
         setLoading(false);
         return;
       }
       
       // Fetch the CSV if we don't have it in history
-      fetch(`/data/${selectedBatch.filename}`)
-        .then(response => response.text())
+      fetch(`${process.env.PUBLIC_URL}/data/${selectedBatch.filename}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch batch ${selectedBatch.batchNumber}`);
+          }
+          return response.text();
+        })
         .then(csvText => {
           Papa.parse(csvText, {
             header: true,
             dynamicTyping: true,
             complete: (results) => {
-              const newResults = results.data.filter(item => item['Candidate Name']); // Filter out empty rows
+              const newResults = results.data.filter(item => item['Candidate Name']);
               setElectionResults(newResults);
               
               // Store this batch in history
               setBatchesHistory(prev => ({
                 ...prev,
-                [batchNumber]: newResults
+                [selectedBatch.batchNumber]: newResults
               }));
               
               setLoading(false);
@@ -120,8 +136,12 @@ const ElectionTracker = () => {
 
   // Find previous batch data for comparison
   useEffect(() => {
-    if (metadata && currentBatch) {
-      const currentIndex = metadata.updates.findIndex(update => update.batchNumber === currentBatch.batchNumber);
+    // Only try to find previous batch if we have metadata, current batch, and more than one batch
+    if (metadata && metadata.updates && metadata.updates.length > 1 && currentBatch) {
+      const currentIndex = metadata.updates.findIndex(update => 
+        update.batchNumber === (typeof currentBatch.batchNumber === 'number' ? 
+          currentBatch.batchNumber : parseInt(currentBatch.batchNumber))
+      );
       
       // If there's a previous batch
       if (currentIndex > 0) {
@@ -132,8 +152,13 @@ const ElectionTracker = () => {
           setPreviousResults(batchesHistory[previousBatch.batchNumber]);
         } else {
           // Fetch it if not in history
-          fetch(`/data/${previousBatch.filename}`)
-            .then(response => response.text())
+          fetch(`${process.env.PUBLIC_URL}/data/${previousBatch.filename}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`Failed to fetch previous batch ${previousBatch.batchNumber}`);
+              }
+              return response.text();
+            })
             .then(csvText => {
               Papa.parse(csvText, {
                 header: true,
@@ -147,6 +172,10 @@ const ElectionTracker = () => {
                     ...prev,
                     [previousBatch.batchNumber]: prevResults
                   }));
+                },
+                error: (error) => {
+                  console.error(`Error parsing previous batch: ${error.message}`);
+                  setPreviousResults(null);
                 }
               });
             })
@@ -159,6 +188,9 @@ const ElectionTracker = () => {
         // No previous batch
         setPreviousResults(null);
       }
+    } else {
+      // No metadata or only one batch
+      setPreviousResults(null);
     }
   }, [currentBatch, metadata, batchesHistory]);
 
@@ -174,12 +206,12 @@ const ElectionTracker = () => {
     <div className="election-tracker">
       <h2>Election Results Tracker</h2>
       
-      {metadata && (
+      {metadata && metadata.updates && metadata.updates.length > 0 && (
         <div className="batch-selector">
           <h3>Select Update Batch:</h3>
           <select 
             value={currentBatch?.batchNumber} 
-            onChange={(e) => loadBatch(parseInt(e.target.value))}
+            onChange={(e) => loadBatch(e.target.value)}
           >
             {metadata.updates.map(update => (
               <option key={update.batchNumber} value={update.batchNumber}>
@@ -192,7 +224,7 @@ const ElectionTracker = () => {
       
       {currentBatch && <MetadataDisplay metadata={currentBatch} />}
       
-      {electionResults.length > 0 && (
+      {electionResults.length > 0 ? (
         <>
           <ResultsTable 
             results={electionResults} 
@@ -200,6 +232,8 @@ const ElectionTracker = () => {
           />
           <ResultsChart results={electionResults} />
         </>
+      ) : (
+        <p>No election results available yet.</p>
       )}
     </div>
   );

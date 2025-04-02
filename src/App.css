@@ -8,11 +8,11 @@
 
 .App-header {
   background-color: #282c34;
-  padding: 10px 20px;
+  padding: 20px;
   color: white;
   margin-bottom: 20px;
   border-radius: 5px;
-  min-height: auto; /* Overriding the min-height: 100vh */
+  /* Removed min-height: 100vh */
 }
 
 h1, h2, h3 {
@@ -106,10 +106,11 @@ footer {
   font-size: 14px;
 }
 
-/* Comparison styles for vote changes */
+/* Vote change and comparison styles */
 .vote-change {
-  margin-left: 10px;
-  font-size: 0.9em;
+  display: inline-block;
+  margin-left: 8px;
+  font-weight: bold;
 }
 
 .vote-change.positive {
@@ -132,6 +133,5 @@ footer {
 }
 
 .leader {
-  font-weight: bold;
   background-color: rgba(144, 238, 144, 0.2); /* Light green background */
 }
