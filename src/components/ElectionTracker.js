@@ -12,8 +12,8 @@ const ElectionTracker = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch the metadata file
-    fetch('/data/metadata.json')
+    // Fetch the metadata file with correct path handling
+    fetch(`${process.env.PUBLIC_URL}/data/metadata.json`)
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch metadata');
@@ -27,7 +27,7 @@ const ElectionTracker = () => {
         setCurrentBatch(latestUpdate);
         
         // Fetch the CSV file for the latest update
-        return fetch(`/data/${latestUpdate.filename}`);
+        return fetch(`${process.env.PUBLIC_URL}/data/${latestUpdate.filename}`);
       })
       .then(response => {
         if (!response.ok) {
@@ -64,7 +64,7 @@ const ElectionTracker = () => {
     if (selectedBatch) {
       setCurrentBatch(selectedBatch);
       
-      fetch(`/data/${selectedBatch.filename}`)
+      fetch(`${process.env.PUBLIC_URL}/data/${selectedBatch.filename}`)
         .then(response => response.text())
         .then(csvText => {
           Papa.parse(csvText, {
