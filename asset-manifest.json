@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/san-diego-election-tracker/static/css/main.b8482c53.css",
-    "main.js": "/san-diego-election-tracker/static/js/main.f681e070.js",
+    "main.js": "/san-diego-election-tracker/static/js/main.3522a4ed.js",
     "static/js/453.ae619b6b.chunk.js": "/san-diego-election-tracker/static/js/453.ae619b6b.chunk.js",
     "index.html": "/san-diego-election-tracker/index.html",
     "main.b8482c53.css.map": "/san-diego-election-tracker/static/css/main.b8482c53.css.map",
-    "main.f681e070.js.map": "/san-diego-election-tracker/static/js/main.f681e070.js.map",
+    "main.3522a4ed.js.map": "/san-diego-election-tracker/static/js/main.3522a4ed.js.map",
     "453.ae619b6b.chunk.js.map": "/san-diego-election-tracker/static/js/453.ae619b6b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.b8482c53.css",
-    "static/js/main.f681e070.js"
+    "static/js/main.3522a4ed.js"
   ]
 }
