@@ -1,25 +1,55 @@
 {
-    "lastUpdated": "2025-04-02T12:00:00",
+    "lastUpdated": "2025-04-04T18:00:00",
     "updates": [
       {
         "batchNumber": 1,
-        "timestamp": "2025-04-02T12:00:00",
-        "filename": "election_results_20250402_1200.csv",
-        "ballotsCountedTotal": 0,
-        "mailBallots": 0,
-        "voteCenterBallots": 0,
+        "timestamp": "2025-04-03T08:00:00",
+        "filename": "election_results_20250403_0800.csv",
+        "ballotsCountedTotal": 25000,
+        "mailBallots": 19000,
+        "voteCenterBallots": 6000,
         "registeredVoters": 373641,
-        "estimatedBallotsRemaining": 0
+        "estimatedBallotsRemaining": 348641
       },
       {
         "batchNumber": 2,
         "timestamp": "2025-04-03T12:00:00",
         "filename": "election_results_20250403_1200.csv",
-        "ballotsCountedTotal": 100000,
-        "mailBallots": 75000,
-        "voteCenterBallots": 25000,
+        "ballotsCountedTotal": 60000,
+        "mailBallots": 45000,
+        "voteCenterBallots": 15000,
         "registeredVoters": 373641,
-        "estimatedBallotsRemaining": 273641
+        "estimatedBallotsRemaining": 313641
+      },
+      {
+        "batchNumber": 3,
+        "timestamp": "2025-04-03T18:00:00",
+        "filename": "election_results_20250403_1800.csv",
+        "ballotsCountedTotal": 120000,
+        "mailBallots": 85000,
+        "voteCenterBallots": 35000,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 253641
+      },
+      {
+        "batchNumber": 4,
+        "timestamp": "2025-04-04T08:00:00",
+        "filename": "election_results_20250404_0800.csv",
+        "ballotsCountedTotal": 180000,
+        "mailBallots": 130000,
+        "voteCenterBallots": 50000,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 193641
+      },
+      {
+        "batchNumber": 5,
+        "timestamp": "2025-04-04T18:00:00",
+        "filename": "election_results_20250404_1800.csv",
+        "ballotsCountedTotal": 235000,
+        "mailBallots": 165000,
+        "voteCenterBallots": 70000,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 0
       }
     ]
   }
