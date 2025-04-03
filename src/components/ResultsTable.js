@@ -27,6 +27,12 @@ const ResultsTable = ({ results, previousResults }) => {
   // Find the leader (candidate with most votes)
   const leader = sortedResults.length > 0 ? sortedResults[0] : null;
 
+  // Function to format numbers with commas
+  const formatNumber = (num) => {
+    if (num === null || num === undefined) return 'N/A';
+    return new Intl.NumberFormat().format(num);
+  };
+
   return (
     <div className="results-table">
       <h3>{contestName}</h3>
@@ -64,12 +70,13 @@ const ResultsTable = ({ results, previousResults }) => {
                 <tr key={index} className={isLeader ? 'leader' : ''}>
                   {columnsToDisplay.map(column => (
                     <td key={`${index}-${column}`}>
-                      {row[column] !== undefined ? row[column] : 'N/A'}
+                      {column === 'Candidate Name' ? row[column] : 
+                        (row[column] !== undefined ? formatNumber(row[column]) : 'N/A')}
                       
                       {/* Show gap from leader for Total Votes column (except for the leader) */}
                       {column === 'Total Votes' && !isLeader && gapFromLeader !== null && gapFromLeader > 0 && (
                         <span className="vote-gap">
-                          ({gapFromLeader} behind leader)
+                          ({formatNumber(gapFromLeader)} behind leader)
                         </span>
                       )}
                     </td>
@@ -80,7 +87,7 @@ const ResultsTable = ({ results, previousResults }) => {
                     <td>
                       {voteChange !== null && (
                         <span className={`vote-change ${voteChange > 0 ? 'positive' : voteChange < 0 ? 'negative' : 'unchanged'}`}>
-                          {voteChange > 0 ? `+${voteChange}` : voteChange}
+                          {voteChange > 0 ? `+${formatNumber(voteChange)}` : formatNumber(voteChange)}
                         </span>
                       )}
                     </td>
