@@ -228,9 +228,13 @@ const ElectionTracker = () => {
         <>
           <ResultsTable 
             results={electionResults} 
-            previousResults={previousResults} 
+            previousResults={previousResults}
           />
-          <ResultsChart results={electionResults} />
+          <ResultsChart 
+            results={electionResults}
+            metadata={metadata}
+            batchesHistory={batchesHistory} 
+          />
         </>
       ) : (
         <p>No election results available yet.</p>

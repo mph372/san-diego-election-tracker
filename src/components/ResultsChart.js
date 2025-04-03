@@ -1,56 +1,84 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const ResultsChart = ({ results }) => {
-  if (!results || results.length === 0) {
+const ResultsChart = ({ results, metadata, batchesHistory }) => {
+  if (!results || results.length === 0 || !metadata || !metadata.updates || !batchesHistory) {
     return null;
   }
 
   // Get the contest name from the first result
   const contestName = results[0]['Contest Name'];
   
-  // Only use the data needed for the chart
-  const chartData = results.map(result => ({
-    name: result['Candidate Name'],
-    votes: result['Total Votes'] || 0,
-    party: result['Party']
-  }));
-
-  // Sort by vote count (descending)
-  chartData.sort((a, b) => b.votes - a.votes);
-
-  // Define party colors
-  const getPartyColor = (party) => {
-    switch (party) {
-      case 'Democratic':
-      case 'DEM':
-        return '#0000ff'; // Blue
-      case 'Republican':
-      case 'REP':
-        return '#ff0000'; // Red
-      case 'Independent':
-      case 'IND':
-        return '#808080'; // Gray
-      case 'Green':
-      case 'GRN':
-        return '#00ff00'; // Green
-      case 'Libertarian':
-      case 'LIB':
-        return '#ffff00'; // Yellow
-      default:
-        return '#800080'; // Purple for others
-    }
+  // Sort the current results by vote count (descending)
+  const sortedResults = [...results].sort((a, b) => 
+    (b['Total Votes'] || 0) - (a['Total Votes'] || 0)
+  );
+  
+  // Define distinctive colors for each candidate
+  const candidateColors = [
+    '#0000ff', // Blue
+    '#ff0000', // Red
+    '#008000', // Green
+    '#ffa500', // Orange
+    '#800080', // Purple
+    '#00ced1', // Dark Turquoise
+    '#ff69b4', // Hot Pink
+    '#8b4513', // Saddle Brown
+    '#4b0082', // Indigo
+    '#556b2f', // Dark Olive Green
+    '#dc143c', // Crimson
+    '#00ff7f'  // Spring Green
+  ];
+  
+  // Assign a unique color to each candidate
+  const getCandidateColor = (index) => {
+    return candidateColors[index % candidateColors.length];
   };
 
-  // Custom tooltip for the bar chart
-  const CustomTooltip = ({ active, payload }) => {
+  // Prepare data for the line chart
+  // First, create an array of data points for each batch
+  const chartData = metadata.updates.map(batch => {
+    const batchData = batchesHistory[batch.batchNumber] || [];
+    
+    // Start with batch information
+    const dataPoint = {
+      name: `Batch ${batch.batchNumber}`,
+      date: new Date(batch.timestamp).toLocaleDateString(),
+    };
+    
+    // Add each candidate's vote count
+    sortedResults.forEach(candidate => {
+      const candidateInBatch = batchData.find(
+        item => item['Candidate Name'] === candidate['Candidate Name']
+      );
+      
+      // Add the votes for this candidate in this batch
+      dataPoint[candidate['Candidate Name']] = 
+        candidateInBatch ? candidateInBatch['Total Votes'] : 0;
+    });
+    
+    return dataPoint;
+  });
+
+  // Custom tooltip for the line chart
+  const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const batchInfo = chartData.find(item => item.name === label);
+      
       return (
-        <div className="custom-tooltip" style={{ backgroundColor: '#fff', padding: '10px', border: '1px solid #ccc' }}>
-          <p className="label"><strong>{data.name}</strong></p>
-          <p className="label">Party: {data.party || 'N/A'}</p>
-          <p className="label">Votes: {new Intl.NumberFormat().format(data.votes)}</p>
+        <div className="custom-tooltip" style={{ 
+          backgroundColor: '#fff', 
+          padding: '10px', 
+          border: '1px solid #ccc',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <p className="label"><strong>{label} - {batchInfo.date}</strong></p>
+          {payload.map((entry, index) => (
+            <p key={index} style={{ color: entry.color }}>
+              <span style={{ fontWeight: 'bold' }}>{entry.name}: </span>
+              {new Intl.NumberFormat().format(entry.value || 0)} votes
+            </p>
+          ))}
         </div>
       );
     }
@@ -59,43 +87,37 @@ const ResultsChart = ({ results }) => {
 
   return (
     <div className="results-chart">
-      <h3>{contestName}</h3>
+      <h3>Vote Growth Over Time - {contestName}</h3>
       <ResponsiveContainer width="100%" height={400}>
-        <BarChart
+        <LineChart
           data={chartData}
           margin={{
             top: 20,
             right: 30,
             left: 20,
-            bottom: 100
+            bottom: 20
           }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="name" 
-            angle={-45} 
-            textAnchor="end" 
-            height={80} 
-          />
+          <XAxis dataKey="name" />
           <YAxis tickFormatter={(value) => new Intl.NumberFormat().format(value)} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar 
-            dataKey="votes" 
-            name="Total Votes"
-            fillOpacity={0.8}
-          >
-            {/* Use different colors based on party */}
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getPartyColor(entry.party)} />
-            ))}
-            <LabelList 
-              dataKey="votes" 
-              position="top" 
-              formatter={(value) => new Intl.NumberFormat().format(value)} 
+          
+          {/* Create a line for each candidate */}
+          {sortedResults.map((candidate, index) => (
+            <Line
+              key={index}
+              type="monotone"
+              dataKey={candidate['Candidate Name']}
+              name={candidate['Candidate Name']}
+              stroke={getCandidateColor(index)}
+              strokeWidth={2}
+              dot={{ r: 5 }}
+              activeDot={{ r: 8 }}
             />
-          </Bar>
-        </BarChart>
+          ))}
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
