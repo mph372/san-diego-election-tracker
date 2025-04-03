@@ -13,6 +13,52 @@ const ElectionTracker = () => {
   const [error, setError] = useState(null);
   const [batchesHistory, setBatchesHistory] = useState({});
 
+  // Function to load data for all batches
+  const loadAllBatchData = async (updates) => {
+    try {
+      // Create an array of promises for fetching all batch data
+      const fetchPromises = updates.map(update => 
+        fetch(`${process.env.PUBLIC_URL}/data/${update.filename}`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch batch ${update.batchNumber}`);
+            }
+            return response.text();
+          })
+          .then(csvText => {
+            return new Promise((resolve) => {
+              Papa.parse(csvText, {
+                header: true,
+                dynamicTyping: true,
+                complete: (results) => {
+                  const batchData = results.data.filter(item => item['Candidate Name']);
+                  resolve({ batchNumber: update.batchNumber, data: batchData });
+                },
+                error: (error) => {
+                  console.error(`Error parsing batch ${update.batchNumber}: ${error.message}`);
+                  resolve({ batchNumber: update.batchNumber, data: [] });
+                }
+              });
+            });
+          })
+      );
+      
+      // Wait for all fetch operations to complete
+      const batchResults = await Promise.all(fetchPromises);
+      
+      // Update the batches history with all results
+      const newBatchesHistory = {};
+      batchResults.forEach(result => {
+        newBatchesHistory[result.batchNumber] = result.data;
+      });
+      
+      return newBatchesHistory;
+    } catch (err) {
+      setError(`Error loading batch data: ${err.message}`);
+      return {};
+    }
+  };
+
   useEffect(() => {
     // Fetch the metadata file
     fetch(`${process.env.PUBLIC_URL}/data/metadata.json`)
@@ -22,7 +68,7 @@ const ElectionTracker = () => {
         }
         return response.json();
       })
-      .then(data => {
+      .then(async data => {
         setMetadata(data);
         
         // Get the most recent update if it exists
@@ -30,44 +76,19 @@ const ElectionTracker = () => {
           const latestUpdate = data.updates[data.updates.length - 1];
           setCurrentBatch(latestUpdate);
           
-          // Fetch the CSV file for the latest update
-          return fetch(`${process.env.PUBLIC_URL}/data/${latestUpdate.filename}`)
-            .then(response => {
-              if (!response.ok) {
-                throw new Error('Failed to fetch CSV data');
-              }
-              return { csvResponse: response.text(), latestBatch: latestUpdate };
-            });
+          // Load all batch data
+          const allBatchData = await loadAllBatchData(data.updates);
+          setBatchesHistory(allBatchData);
+          
+          // Set the election results to the latest batch
+          if (allBatchData[latestUpdate.batchNumber]) {
+            setElectionResults(allBatchData[latestUpdate.batchNumber]);
+          }
+          
+          setLoading(false);
         } else {
           throw new Error('No updates found in metadata');
         }
-      })
-      .then(({ csvResponse, latestBatch }) => {
-        return csvResponse.then(text => ({ csvText: text, latestBatch }));
-      })
-      .then(({ csvText, latestBatch }) => {
-        // Parse the CSV data
-        Papa.parse(csvText, {
-          header: true,
-          dynamicTyping: true,
-          complete: (results) => {
-            // Filter out any rows without a candidate name (empty rows)
-            const currentResults = results.data.filter(item => item['Candidate Name']);
-            setElectionResults(currentResults);
-            
-            // Store this batch in history using the batch we just loaded
-            setBatchesHistory(prev => ({
-              ...prev,
-              [latestBatch.batchNumber]: currentResults
-            }));
-            
-            setLoading(false);
-          },
-          error: (error) => {
-            setError(`CSV parsing error: ${error.message}`);
-            setLoading(false);
-          }
-        });
       })
       .catch(err => {
         setError(`Error: ${err.message}`);
@@ -90,47 +111,46 @@ const ElectionTracker = () => {
       
       setCurrentBatch(selectedBatch);
       
-      // Check if we already have this batch in our history
+      // Use the preloaded batch data
       if (batchesHistory[selectedBatch.batchNumber]) {
         setElectionResults(batchesHistory[selectedBatch.batchNumber]);
         setLoading(false);
-        return;
-      }
-      
-      // Fetch the CSV if we don't have it in history
-      fetch(`${process.env.PUBLIC_URL}/data/${selectedBatch.filename}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch batch ${selectedBatch.batchNumber}`);
-          }
-          return response.text();
-        })
-        .then(csvText => {
-          Papa.parse(csvText, {
-            header: true,
-            dynamicTyping: true,
-            complete: (results) => {
-              const newResults = results.data.filter(item => item['Candidate Name']);
-              setElectionResults(newResults);
-              
-              // Store this batch in history
-              setBatchesHistory(prev => ({
-                ...prev,
-                [selectedBatch.batchNumber]: newResults
-              }));
-              
-              setLoading(false);
-            },
-            error: (error) => {
-              setError(`CSV parsing error: ${error.message}`);
-              setLoading(false);
+      } else {
+        // As a fallback, fetch the batch data if it's not in history
+        fetch(`${process.env.PUBLIC_URL}/data/${selectedBatch.filename}`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch batch ${selectedBatch.batchNumber}`);
             }
+            return response.text();
+          })
+          .then(csvText => {
+            Papa.parse(csvText, {
+              header: true,
+              dynamicTyping: true,
+              complete: (results) => {
+                const newResults = results.data.filter(item => item['Candidate Name']);
+                setElectionResults(newResults);
+                
+                // Store this batch in history
+                setBatchesHistory(prev => ({
+                  ...prev,
+                  [selectedBatch.batchNumber]: newResults
+                }));
+                
+                setLoading(false);
+              },
+              error: (error) => {
+                setError(`CSV parsing error: ${error.message}`);
+                setLoading(false);
+              }
+            });
+          })
+          .catch(err => {
+            setError(`Error: ${err.message}`);
+            setLoading(false);
           });
-        })
-        .catch(err => {
-          setError(`Error: ${err.message}`);
-          setLoading(false);
-        });
+      }
     }
   };
 
@@ -150,39 +170,6 @@ const ElectionTracker = () => {
         // Check if we have it in history
         if (batchesHistory[previousBatch.batchNumber]) {
           setPreviousResults(batchesHistory[previousBatch.batchNumber]);
-        } else {
-          // Fetch it if not in history
-          fetch(`${process.env.PUBLIC_URL}/data/${previousBatch.filename}`)
-            .then(response => {
-              if (!response.ok) {
-                throw new Error(`Failed to fetch previous batch ${previousBatch.batchNumber}`);
-              }
-              return response.text();
-            })
-            .then(csvText => {
-              Papa.parse(csvText, {
-                header: true,
-                dynamicTyping: true,
-                complete: (results) => {
-                  const prevResults = results.data.filter(item => item['Candidate Name']);
-                  setPreviousResults(prevResults);
-                  
-                  // Store in history
-                  setBatchesHistory(prev => ({
-                    ...prev,
-                    [previousBatch.batchNumber]: prevResults
-                  }));
-                },
-                error: (error) => {
-                  console.error(`Error parsing previous batch: ${error.message}`);
-                  setPreviousResults(null);
-                }
-              });
-            })
-            .catch(err => {
-              console.error("Error fetching previous batch:", err);
-              setPreviousResults(null);
-            });
         }
       } else {
         // No previous batch
