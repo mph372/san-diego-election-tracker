@@ -3,6 +3,8 @@ import Papa from 'papaparse';
 import ResultsTable from './ResultsTable';
 import ResultsChart from './ResultsChart';
 import MetadataDisplay from './MetadataDisplay';
+import PrecinctMap from './PrecinctMap';
+
 
 const ElectionTracker = () => {
   const [metadata, setMetadata] = useState(null);
@@ -222,6 +224,7 @@ const ElectionTracker = () => {
             metadata={metadata}
             batchesHistory={batchesHistory} 
           />
+            <PrecinctMap currentBatch={currentBatch} />
         </>
       ) : (
         <p>No election results available yet.</p>
