@@ -14,15 +14,19 @@ const ResultsChart = ({ results, metadata, batchesHistory }) => {
     (b['Total Votes'] || 0) - (a['Total Votes'] || 0)
   );
   
-  // Define distinctive colors for each candidate
-  const candidateColors = [
-    '#0000ff', // Blue
-    '#ff0000', // Red
-    '#008000', // Green
-    '#ffa500', // Orange
-    '#800080', // Purple
-    '#00ced1', // Dark Turquoise
-    '#ff69b4', // Hot Pink
+  // Define softer, easier-on-the-eyes candidate colors - same as the map
+  const candidateColors = {
+    'CAROLINA CHAVEZ': '#6A9DC8',   // Soft blue
+    'LOUIS A. FUENTES': '#E27D60',  // Muted coral
+    'VIVIAN MORENO': '#85C88A',     // Soft green
+    'LINCOLN PICKARD': '#E8A87C',   // Peach
+    'PALOMA AGUIRRE': '#C38D9E',    // Muted lavender
+    'ELIZABETH EFIRD': '#41B3A3',   // Seafoam green
+    'JOHN MC CANN': '#DAB785'       // Warm beige
+  };
+  
+  // Fallback colors if we have more candidates than defined colors
+  const fallbackColors = [
     '#8b4513', // Saddle Brown
     '#4b0082', // Indigo
     '#556b2f', // Dark Olive Green
@@ -30,9 +34,9 @@ const ResultsChart = ({ results, metadata, batchesHistory }) => {
     '#00ff7f'  // Spring Green
   ];
   
-  // Assign a unique color to each candidate
-  const getCandidateColor = (index) => {
-    return candidateColors[index % candidateColors.length];
+  // Get the color for a candidate
+  const getCandidateColor = (candidateName) => {
+    return candidateColors[candidateName] || fallbackColors[0];
   };
 
   // Prepare data for the line chart
@@ -65,6 +69,11 @@ const ResultsChart = ({ results, metadata, batchesHistory }) => {
     if (active && payload && payload.length) {
       const batchInfo = chartData.find(item => item.name === label);
       
+      // Sort the payload by vote count (descending)
+      const sortedPayload = [...payload].sort((a, b) => 
+        (b.value || 0) - (a.value || 0)
+      );
+      
       return (
         <div className="custom-tooltip" style={{ 
           backgroundColor: '#fff', 
@@ -73,7 +82,7 @@ const ResultsChart = ({ results, metadata, batchesHistory }) => {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           <p className="label"><strong>{label} - {batchInfo.date}</strong></p>
-          {payload.map((entry, index) => (
+          {sortedPayload.map((entry, index) => (
             <p key={index} style={{ color: entry.color }}>
               <span style={{ fontWeight: 'bold' }}>{entry.name}: </span>
               {new Intl.NumberFormat().format(entry.value || 0)} votes
@@ -111,7 +120,7 @@ const ResultsChart = ({ results, metadata, batchesHistory }) => {
               type="monotone"
               dataKey={candidate['Candidate Name']}
               name={candidate['Candidate Name']}
-              stroke={getCandidateColor(index)}
+              stroke={getCandidateColor(candidate['Candidate Name'])}
               strokeWidth={2}
               dot={{ r: 5 }}
               activeDot={{ r: 8 }}

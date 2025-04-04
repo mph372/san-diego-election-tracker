@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import Papa from 'papaparse';
+import proj4 from 'proj4';
 
 // Fix Leaflet icon issues
 import L from 'leaflet';
@@ -17,21 +18,18 @@ const PrecinctMap = ({ currentBatch }) => {
   const [precinctResults, setPrecinctResults] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState('No debug info yet');
 
-  // Function to transform California State Plane (EPSG:2230) to WGS84
+  // Define the projection transformations
   const transformCoordinates = (coordinates) => {
-    // More accurate transformation for San Diego County (EPSG:2230 to WGS84)
-    // These are specific to San Diego area in California State Plane Zone 6
-    const x = coordinates[0];
-    const y = coordinates[1];
+    // Define the projections
+    // EPSG:2230 is the California State Plane Zone 6 projection (San Diego)
+    proj4.defs('EPSG:2230', '+proj=lcc +lat_1=32.78333333333333 +lat_2=33.88333333333333 +lat_0=32.16666666666666 +lon_0=-116.25 +x_0=2000000 +y_0=500000 +ellps=GRS80 +datum=NAD83 +units=us-ft +no_defs');
     
-    // Transform using these specific factors for San Diego (approximate)
-    // These values were determined empirically for San Diego County
-    const lon = (x - 6270000) * 0.00000306 - 117.15;
-    const lat = (y - 1790000) * 0.00000326 + 32.71;
+    // Transform from California State Plane to WGS84
+    const result = proj4('EPSG:2230', 'WGS84', coordinates);
     
-    return [lon, lat];
+    // Return [longitude, latitude] which is what Leaflet expects
+    return result;
   };
 
   // Transform entire GeoJSON
@@ -60,7 +58,6 @@ const PrecinctMap = ({ currentBatch }) => {
     const loadPrecinctBoundaries = async () => {
       try {
         setLoading(true);
-        setDebugInfo('Fetching GeoJSON file...');
         
         // Fetch the precinct boundaries file
         const response = await fetch(`${process.env.PUBLIC_URL}/data/Election_Precincts_2025_04_08.geojson`);
@@ -69,7 +66,6 @@ const PrecinctMap = ({ currentBatch }) => {
           throw new Error(`Failed to fetch precinct boundaries: ${response.status} ${response.statusText}`);
         }
         
-        setDebugInfo('GeoJSON file fetched, parsing JSON...');
         const text = await response.text();
         
         // Check if we got any data
@@ -82,33 +78,19 @@ const PrecinctMap = ({ currentBatch }) => {
           
           // Check if it's a valid GeoJSON
           if (!geojson.type || !geojson.features) {
-            setDebugInfo(`Invalid GeoJSON format. Missing type or features. Keys: ${Object.keys(geojson).join(', ')}`);
-          } else {
-            setDebugInfo(`Successfully parsed GeoJSON with ${geojson.features.length} features`);
+            throw new Error('Invalid GeoJSON format. Missing type or features.');
+          }
             
-            // Check for the CRS
-            if (geojson.crs && geojson.crs.properties && geojson.crs.properties.name === "EPSG:2230") {
-              setDebugInfo(prevInfo => `${prevInfo}\nDetected EPSG:2230 (California State Plane) projection, transforming coordinates...`);
-              
-              // Transform the coordinates
-              const transformedGeoJson = transformGeoJSON(geojson);
-              setPrecinctBoundaries(transformedGeoJson);
-              
-              // Log a sample transformed coordinate
-              if (transformedGeoJson.features.length > 0 && 
-                  transformedGeoJson.features[0].geometry &&
-                  transformedGeoJson.features[0].geometry.coordinates &&
-                  transformedGeoJson.features[0].geometry.coordinates[0]) {
-                  
-                setDebugInfo(prevInfo => `${prevInfo}\nSample transformed coordinate: ${JSON.stringify(transformedGeoJson.features[0].geometry.coordinates[0][0])}`);
-              }
-            } else {
-              // No specific CRS or already in WGS84
-              setPrecinctBoundaries(geojson);
-            }
+          // Check for the CRS
+          if (geojson.crs && geojson.crs.properties && geojson.crs.properties.name === "EPSG:2230") {
+            // Transform the coordinates
+            const transformedGeoJson = transformGeoJSON(geojson);
+            setPrecinctBoundaries(transformedGeoJson);
+          } else {
+            // No specific CRS or already in WGS84
+            setPrecinctBoundaries(geojson);
           }
         } catch (jsonError) {
-          setDebugInfo(`Failed to parse JSON: ${jsonError.message}`);
           throw jsonError;
         }
         
@@ -116,7 +98,6 @@ const PrecinctMap = ({ currentBatch }) => {
       } catch (err) {
         console.error("Error loading precinct boundaries:", err);
         setError(`Error loading precinct boundaries: ${err.message}`);
-        setDebugInfo(prev => `${prev}\nERROR: ${err.message}`);
         setLoading(false);
       }
     };
@@ -130,38 +111,95 @@ const PrecinctMap = ({ currentBatch }) => {
     
     const loadPrecinctResults = async () => {
       try {
-        setDebugInfo(prev => `${prev}\nFetching precinct results...`);
         // Load precinct results file for the current batch
         const response = await fetch(`${process.env.PUBLIC_URL}/data/precincts_21.csv`);
         
         if (!response.ok) {
-          setDebugInfo(prev => `${prev}\nPrecinct results not found: ${response.status}`);
+          console.log("Precinct results not found");
           return;
         }
         
         const text = await response.text();
-        setDebugInfo(prev => `${prev}\nReceived precinct results data, parsing CSV...`);
         
         Papa.parse(text, {
           header: true,
           dynamicTyping: true,
+          skipEmptyLines: true,
+          transformHeader: header => header.trim(),
+          // Skip the first two rows which contain irrelevant text
+          beforeFirstChunk: function(chunk) {
+            const rows = chunk.split(/\r\n|\r|\n/);
+            if (rows.length > 2) {
+              return rows.slice(2).join('\n');
+            }
+            return chunk;
+          },
           complete: (results) => {
-            setDebugInfo(prev => `${prev}\nParsed ${results.data.length} precinct results`);
+            // Process the results to extract the precinct numbers
+            const rawRows = results.data.filter(row => row.Precinct && row['Candidate Name']);
+            console.log("Raw CSV rows:", rawRows.length);
             
-            // Log a sample of the parsed data
-            if (results.data.length > 0) {
-              setDebugInfo(prev => `${prev}\nSample result: ${JSON.stringify(results.data[0])}`);
+            // Group by precinct
+            const precinctGroups = {};
+            
+            rawRows.forEach(row => {
+              // Extract the precinct number
+              const parts = row.Precinct.split('-');
+              let precinctNumber = '';
+              if (parts.length >= 2) {
+                precinctNumber = parts[1].trim();
+              }
+              
+              // Skip if we couldn't extract a precinct number
+              if (!precinctNumber) return;
+              
+              // Initialize the group if it doesn't exist
+              if (!precinctGroups[precinctNumber]) {
+                precinctGroups[precinctNumber] = {
+                  Precinct: row.Precinct,
+                  PrecinctNumber: precinctNumber,
+                  TotalVotes: 0,
+                  candidates: {}
+                };
+              }
+              
+              // Add this candidate's votes to the precinct group
+              const candidateName = row['Candidate Name'].trim();
+              const votes = row.Votes || 0;
+              
+              precinctGroups[precinctNumber].candidates[candidateName] = votes;
+              precinctGroups[precinctNumber].TotalVotes += votes;
+            });
+            
+            // Convert groups to an array of results
+            const processedResults = Object.values(precinctGroups).map(group => {
+              // Create a result object with precinct info
+              const result = {
+                Precinct: group.Precinct,
+                PrecinctNumber: group.PrecinctNumber,
+                TotalVotes: group.TotalVotes
+              };
+              
+              // Add each candidate's votes as a direct property
+              Object.entries(group.candidates).forEach(([candidate, votes]) => {
+                result[candidate] = votes;
+              });
+              
+              return result;
+            });
+            
+            console.log("Processed precinct results:", processedResults.length);
+            if (processedResults.length > 0) {
+              console.log("Sample processed result:", processedResults[0]);
             }
             
-            setPrecinctResults(results.data);
+            setPrecinctResults(processedResults);
           },
           error: (error) => {
-            setDebugInfo(prev => `${prev}\nError parsing CSV: ${error.message}`);
-            setError(`Error parsing precinct results: ${error.message}`);
+            console.error(`Error parsing CSV: ${error.message}`);
           }
         });
       } catch (err) {
-        setDebugInfo(prev => `${prev}\nError loading results: ${err.message}`);
         console.error("Error loading precinct results:", err);
       }
     };
@@ -173,7 +211,7 @@ const PrecinctMap = ({ currentBatch }) => {
   const getPrecinctStyle = (feature) => {
     // Default style when no results are available
     const defaultStyle = {
-      fillColor: '#CCCCCC',
+      fillColor: '#EEEEEE',
       weight: 1,
       opacity: 1,
       color: '#666',
@@ -185,53 +223,64 @@ const PrecinctMap = ({ currentBatch }) => {
     // Match precinct with results
     const precinctId = feature.properties.consnum;
     
-    // Log for debugging
-    // console.log("Looking for precinct", precinctId, "in results");
-    
-    // Find this precinct in the results - try different matching strategies
+    // Find this precinct in the results
     let precinctResult = precinctResults.find(result => 
-      result.Precinct && String(result.Precinct) === String(precinctId)
+      result.PrecinctNumber && String(result.PrecinctNumber) === String(precinctId)
     );
     
-    // If not found, try other properties from the CSV
+    // If no match found, use a distinctive style to show it's unmapped
     if (!precinctResult) {
-      precinctResult = precinctResults.find(result => {
-        // Try all properties in the result that might match the precinct ID
-        return Object.entries(result).some(([key, value]) => 
-          String(value) === String(precinctId)
-        );
-      });
+      return {
+        fillColor: '#DDDDDD',  // Light gray
+        weight: 1,
+        opacity: 1,
+        color: '#999',         // Darker border
+        fillOpacity: 0.2       // More transparent
+      };
     }
     
-    if (!precinctResult) return defaultStyle;
-    
-    // Determine which candidate has the most votes in this precinct
+    // Define softer, easier-on-the-eyes candidate colors
     const candidateColors = {
-      'CAROLINA CHAVEZ': '#0000ff', // Blue
-      'LOUIS A. FUENTES': '#ff0000', // Red
-      'VIVIAN MORENO': '#008000', // Green
-      'LINCOLN PICKARD': '#ffa500', // Orange
-      'PALOMA AGUIRRE': '#800080', // Purple
-      'ELIZABETH EFIRD': '#00ced1', // Dark Turquoise
-      'JOHN MC CANN': '#ff69b4' // Hot Pink
+      'CAROLINA CHAVEZ': '#6A9DC8',   // Soft blue
+      'LOUIS A. FUENTES': '#E27D60',  // Muted coral
+      'VIVIAN MORENO': '#85C88A',     // Soft green
+      'LINCOLN PICKARD': '#E8A87C',   // Peach
+      'PALOMA AGUIRRE': '#C38D9E',    // Muted lavender
+      'ELIZABETH EFIRD': '#41B3A3',   // Seafoam green
+      'JOHN MC CANN': '#DAB785'       // Warm beige
     };
     
     // Find the candidate with the most votes
     let leadingCandidate = null;
     let maxVotes = 0;
     
-    Object.entries(precinctResult).forEach(([key, value]) => {
-      // Skip non-candidate fields - adjust based on your actual CSV structure
-      if (['Precinct', 'PrecinctName', 'TotalVotes'].includes(key)) return;
-      if (typeof value !== 'number') return; // Skip non-numeric values
-      
-      // Check if this candidate has more votes
-      if (value > maxVotes) {
-        maxVotes = value;
-        leadingCandidate = key;
+    // List of candidates to check
+    const candidateNames = [
+      'CAROLINA CHAVEZ', 'LOUIS A. FUENTES', 'VIVIAN MORENO', 
+      'LINCOLN PICKARD', 'PALOMA AGUIRRE', 'ELIZABETH EFIRD', 'JOHN MC CANN'
+    ];
+    
+    // Check each candidate for votes
+    candidateNames.forEach(candidate => {
+      const votes = precinctResult[candidate] || 0;
+      if (votes > maxVotes) {
+        maxVotes = votes;
+        leadingCandidate = candidate;
       }
     });
     
+    // If no votes counted yet, use a special style
+    if (maxVotes === 0) {
+      return {
+        fillColor: '#CCFFCC',  // Light green
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        fillOpacity: 0.5
+      };
+    }
+    
+    // Use the color for the leading candidate
     const color = candidateColors[leadingCandidate] || '#CCCCCC';
     
     return {
@@ -251,30 +300,20 @@ const PrecinctMap = ({ currentBatch }) => {
     if (!precinctResults) {
       layer.bindTooltip(`
         <strong>Precinct: ${precinctName}</strong><br>
-        No results available
+        Waiting for results data...
       `);
       return;
     }
     
-    // Find this precinct in the results - same matching logic as in getPrecinctStyle
+    // Find this precinct in the results
     let precinctResult = precinctResults.find(result => 
-      result.Precinct && String(result.Precinct) === String(precinctId)
+      result.PrecinctNumber && String(result.PrecinctNumber) === String(precinctId)
     );
-    
-    // If not found, try other properties from the CSV
-    if (!precinctResult) {
-      precinctResult = precinctResults.find(result => {
-        // Try all properties in the result that might match the precinct ID
-        return Object.entries(result).some(([key, value]) => 
-          String(value) === String(precinctId)
-        );
-      });
-    }
     
     if (!precinctResult) {
       layer.bindTooltip(`
         <strong>Precinct: ${precinctName} (ID: ${precinctId})</strong><br>
-        No results available for this precinct
+        No results found for this precinct
       `);
       return;
     }
@@ -282,24 +321,33 @@ const PrecinctMap = ({ currentBatch }) => {
     // Format tooltip content
     let tooltipContent = `<strong>Precinct: ${precinctName}</strong><br>`;
     
-    // Add Total Votes if available
-    const totalVotes = precinctResult.TotalVotes || 
-                      precinctResult['Total Votes'] || 
-                      Object.values(precinctResult).reduce((sum, val) => 
-                        typeof val === 'number' ? sum + val : sum, 0);
+    // Add Total Votes
+    tooltipContent += `Total Votes: ${precinctResult.TotalVotes || 0}<br><br>`;
     
-    tooltipContent += `Total Votes: ${totalVotes}<br><br>`;
+    // Candidate names we expect to find
+    const candidateNames = [
+      'CAROLINA CHAVEZ', 'LOUIS A. FUENTES', 'VIVIAN MORENO', 
+      'LINCOLN PICKARD', 'PALOMA AGUIRRE', 'ELIZABETH EFIRD', 'JOHN MC CANN'
+    ];
     
-    // Add results for each candidate
-    Object.entries(precinctResult).forEach(([key, value]) => {
-      // Skip non-candidate fields - adjust based on your actual CSV structure
-      if (['Precinct', 'PrecinctName', 'TotalVotes', 'Total Votes'].includes(key)) return;
-      if (typeof value !== 'number') return; // Skip non-numeric values
+    // Create an array of candidates with their votes for sorting
+    const candidateResults = candidateNames.map(candidate => {
+      return {
+        name: candidate,
+        votes: precinctResult[candidate] || 0
+      };
+    });
+    
+    // Sort candidates by vote count (descending)
+    candidateResults.sort((a, b) => b.votes - a.votes);
+    
+    // Add each candidate with their votes in sorted order
+    candidateResults.forEach(candidate => {
+      const percentage = precinctResult.TotalVotes > 0 
+        ? ((candidate.votes / precinctResult.TotalVotes) * 100).toFixed(1) 
+        : '0.0';
       
-      // Calculate percentage
-      const percentage = totalVotes > 0 ? ((value / totalVotes) * 100).toFixed(1) : 0;
-      
-      tooltipContent += `${key}: ${value} (${percentage}%)<br>`;
+      tooltipContent += `${candidate.name}: ${candidate.votes} (${percentage}%)<br>`;
     });
     
     layer.bindTooltip(tooltipContent, { sticky: true });
@@ -316,13 +364,13 @@ const PrecinctMap = ({ currentBatch }) => {
         <>
           <div style={{ height: '500px', width: '100%', margin: '20px 0' }}>
             <MapContainer
-              center={[32.71, -117.15]} // San Diego coordinates
-              zoom={10}
+              center={[32.65, -117.1]} // San Diego District 1 coordinates
+              zoom={11}
               style={{ height: '100%', width: '100%' }}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
               />
               {precinctBoundaries && (
                 <GeoJSON
@@ -333,8 +381,69 @@ const PrecinctMap = ({ currentBatch }) => {
               )}
             </MapContainer>
           </div>
-          <div style={{ whiteSpace: 'pre-line', fontSize: '12px', backgroundColor: '#f5f5f5', padding: '10px', marginTop: '10px' }}>
-            Debug Info: {debugInfo}
+          
+          {/* Map Legend */}
+          <div className="map-legend" style={{ 
+            marginTop: '10px', 
+            padding: '10px',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            backgroundColor: '#f9f9f9'
+          }}>
+            <h4 style={{ marginTop: 0, marginBottom: '10px' }}>Candidate Colors</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {Object.entries({
+                'CAROLINA CHAVEZ': '#6A9DC8',   // Soft blue
+                'LOUIS A. FUENTES': '#E27D60',  // Muted coral
+                'VIVIAN MORENO': '#85C88A',     // Soft green
+                'LINCOLN PICKARD': '#E8A87C',   // Peach
+                'PALOMA AGUIRRE': '#C38D9E',    // Muted lavender
+                'ELIZABETH EFIRD': '#41B3A3',   // Seafoam green
+                'JOHN MC CANN': '#DAB785'       // Warm beige
+              }).map(([candidate, color], index) => (
+                <div key={index} style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  marginRight: '10px'
+                }}>
+                  <div style={{ 
+                    width: '20px', 
+                    height: '20px', 
+                    backgroundColor: color,
+                    marginRight: '5px',
+                    border: '1px solid #666'
+                  }}></div>
+                  <span>{candidate}</span>
+                </div>
+              ))}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                marginRight: '10px'
+              }}>
+                <div style={{ 
+                  width: '20px', 
+                  height: '20px', 
+                  backgroundColor: '#CCFFCC',
+                  marginRight: '5px',
+                  border: '1px solid #666'
+                }}></div>
+                <span>No Votes</span>
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center'
+              }}>
+                <div style={{ 
+                  width: '20px', 
+                  height: '20px', 
+                  backgroundColor: '#DDDDDD',
+                  marginRight: '5px',
+                  border: '1px solid #666'
+                }}></div>
+                <span>No Data</span>
+              </div>
+            </div>
           </div>
         </>
       )}
