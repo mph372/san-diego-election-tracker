@@ -1,70 +1,46 @@
-# Getting Started with Create React App
+# San Diego Election Tracker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A web application for tracking and visualizing election results for the San Diego County Board of Supervisors District 1 Special Election.
 
-## Available Scripts
+## About This Tool
 
-In the project directory, you can run:
+This application lets you view and analyze election results from the San Diego County Board of Supervisors District 1 Special Election. It provides visualization tools to track how votes are counted over time and see geographical patterns in the results.
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- View election results from multiple update batches
+- See changes in vote counts between updates
+- Explore interactive charts showing vote trends
+- View a color-coded map of precinct-level results
+- Track voter turnout and ballots remaining to be counted
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## How to Use
 
-### `npm test`
+### Viewing Election Results
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. **Select an Update Batch**: Use the dropdown menu to choose which vote count update you want to view
+2. **View the Results Table**: See vote totals for each candidate and how they changed from the previous update
+3. **Explore the Results Chart**: Track how vote totals have changed over time
+4. **Check the Precinct Map**: See which candidates are leading in different areas
 
-### `npm run build`
+### Understanding the Data
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Current Update Status**: Shows when results were last updated, how many ballots have been counted, and how many remain
+- **Results Table**: 
+  - Shows each candidate's vote totals
+  - Highlights the leading candidate
+  - Shows how many votes other candidates are behind the leader
+  - Shows how vote totals changed from the previous update
+- **Results Chart**: Shows how each candidate's vote total has grown across all updates
+- **Precinct Map**: Shows which candidate is leading in each precinct, with darker colors indicating stronger support
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Data Source
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+All election data comes from the San Diego County Registrar of Voters. The application is updated with new data as it becomes available during the counting process.
 
-### `npm run eject`
+## Contact
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Created by Mason Herron. If you have questions or encounter issues with this tool, please contact:
+- Email: [mason@edgewater-strategies.com](mailto:mason@edgewater-strategies.com)
+- LinkedIn: [masonherron](https://www.linkedin.com/in/masonherron/)
+- Twitter: [@mason_herron](https://x.com/mason_herron)
