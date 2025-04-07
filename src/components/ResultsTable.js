@@ -1,5 +1,6 @@
 import React from 'react';
 
+// This component displays election results in a table with vote percentages and percentage changes
 const ResultsTable = ({ results, previousResults }) => {
   // Check if results array is empty
   if (!results || results.length === 0) {
@@ -27,6 +28,9 @@ const ResultsTable = ({ results, previousResults }) => {
   // Find the leader (candidate with most votes)
   const leader = sortedResults.length > 0 ? sortedResults[0] : null;
 
+  // Calculate total votes across all candidates
+  const totalAllVotes = sortedResults.reduce((sum, candidate) => sum + (candidate['Total Votes'] || 0), 0);
+
   // Function to format numbers with commas
   const formatNumber = (num) => {
     if (num === null || num === undefined) return 'N/A';
@@ -43,6 +47,7 @@ const ResultsTable = ({ results, previousResults }) => {
               {columnsToDisplay.map(column => (
                 <th key={column}>{formatColumnName(column)}</th>
               ))}
+              <th>Percentage</th>
               {previousResults && <th>Vote Change</th>}
             </tr>
           </thead>
@@ -63,6 +68,24 @@ const ResultsTable = ({ results, previousResults }) => {
                 leader['Total Votes'] - row['Total Votes'] : 
                 null;
               
+              // Calculate vote percentage
+              const votePercentage = totalAllVotes > 0 && row['Total Votes'] !== undefined ? 
+                (row['Total Votes'] / totalAllVotes) * 100 : 
+                0;
+              
+              // Calculate percentage change
+              let prevPercentage = 0;
+              if (previousRow && previousResults) {
+                // Calculate total votes in previous batch
+                const prevTotalAllVotes = previousResults.reduce(
+                  (sum, candidate) => sum + (candidate['Total Votes'] || 0), 0
+                );
+                prevPercentage = prevTotalAllVotes > 0 ? 
+                  (previousRow['Total Votes'] / prevTotalAllVotes) * 100 : 
+                  0;
+              }
+              const percentageChange = previousRow ? votePercentage - prevPercentage : null;
+              
               // Determine if this row is the leader
               const isLeader = index === 0;
               
@@ -82,12 +105,20 @@ const ResultsTable = ({ results, previousResults }) => {
                     </td>
                   ))}
                   
+                  {/* Show vote percentage */}
+                  <td>{votePercentage.toFixed(2)}%</td>
+                  
                   {/* Show vote changes if previous results available */}
                   {previousResults && (
                     <td>
                       {voteChange !== null && (
                         <span className={`vote-change ${voteChange > 0 ? 'positive' : voteChange < 0 ? 'negative' : 'unchanged'}`}>
                           {voteChange > 0 ? `+${formatNumber(voteChange)}` : formatNumber(voteChange)}
+                          {percentageChange !== null && (
+                            <span className="percentage-change">
+                              {' '}({percentageChange > 0 ? '+' : ''}{percentageChange.toFixed(2)}%)
+                            </span>
+                          )}
                         </span>
                       )}
                     </td>

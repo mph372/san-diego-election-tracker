@@ -132,3 +132,9 @@ footer {
   background-color: rgba(144, 238, 144, 0.2); /* Light green background */
 }
 
+.percentage-change {
+  font-size: 0.9em;
+  font-style: italic;
+  color: inherit;
+}
+
