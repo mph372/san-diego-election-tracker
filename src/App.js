@@ -17,6 +17,13 @@ function App() {
         <a href="https://x.com/mason_herron" target="_blank" rel="noopener noreferrer">Twitter</a>
       </p>
 
+      <div className="important-links">
+        <a href="https://github.com/mph372/san-diego-election-tracker/tree/main/public/data" target="_blank" rel="noopener noreferrer" className="action-link">Download Raw Data</a>
+        <a href="https://forms.gle/exampleGoogleFormURL" target="_blank" rel="noopener noreferrer" className="action-link">Get Email Updates</a>
+      </div>
+
+
+
       <main>
         <ElectionTracker />
       </main>
