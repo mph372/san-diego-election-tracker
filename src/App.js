@@ -19,7 +19,7 @@ function App() {
 
       <div className="important-links">
         <a href="https://github.com/mph372/san-diego-election-tracker/tree/main/public/data" target="_blank" rel="noopener noreferrer" className="action-link">Download Raw Data</a>
-        <a href="https://forms.gle/exampleGoogleFormURL" target="_blank" rel="noopener noreferrer" className="action-link">Get Email Updates</a>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSd3ioQJxgrYjSlOKnjyYPZ0zSJkXONyrN8nBT4w60igDMTRiQ/viewform?usp=header" target="_blank" rel="noopener noreferrer" className="action-link">Get Email Updates</a>
       </div>
 
 
