@@ -21,3 +21,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Ignore Jupyter checkpoints folder
+.ipynb_checkpoints/
+
+# Ignore that specific notebook
+Election Results Scraper.ipynb
+
+# Ignore the raw_results folder
+raw_results/

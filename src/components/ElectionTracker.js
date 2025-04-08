@@ -4,6 +4,7 @@ import ResultsTable from './ResultsTable';
 import ResultsChart from './ResultsChart';
 import MetadataDisplay from './MetadataDisplay';
 import PrecinctMap from './PrecinctMap';
+import CommunityResults from './CommunityResults';
 
 
 const ElectionTracker = () => {
@@ -225,6 +226,7 @@ const ElectionTracker = () => {
             batchesHistory={batchesHistory} 
           />
             <PrecinctMap currentBatch={currentBatch} />
+            <CommunityResults currentBatch={currentBatch} />
         </>
       ) : (
         <p>No election results available yet.</p>
