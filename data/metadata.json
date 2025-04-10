@@ -40,6 +40,16 @@
         "voteCenterBallots": 1876,
         "registeredVoters": 373641,
         "estimatedBallotsRemaining": 11000
+      },
+      {
+        "batchNumber": 5,
+        "timestamp": "2025-04-10T16:46:56",
+        "filename": "election_results_20250410_1650.csv",
+        "ballotsCountedTotal": 62568,
+        "mailBallots": 60692,
+        "voteCenterBallots": 1876,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 4500
       }
     ]
 }
