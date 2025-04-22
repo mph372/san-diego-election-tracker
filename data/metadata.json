@@ -1,5 +1,5 @@
 {
-    "lastUpdated": "2025-04-11T16:42:25",
+    "lastUpdated": "2025-04-18T14:02:14",
     "updates": [
       {
         "batchNumber": 1,
@@ -67,6 +67,16 @@
         "filename": "election_results_20250414_1650.csv",
         "ballotsCountedTotal": 66572,
         "mailBallots": 64672,
+        "voteCenterBallots": 1900,
+        "registeredVoters": 373641,
+        "estimatedBallotsRemaining": 0
+      },
+      {
+        "batchNumber": 8,
+        "timestamp": "2025-04-18T14:02:14",
+        "filename": "election_results_20250418_1400.csv",
+        "ballotsCountedTotal": 66626,
+        "mailBallots": 64676,
         "voteCenterBallots": 1900,
         "registeredVoters": 373641,
         "estimatedBallotsRemaining": 0
