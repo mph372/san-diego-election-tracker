@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/san-diego-election-tracker/static/css/main.5e44a15b.css",
-    "main.js": "/san-diego-election-tracker/static/js/main.e416255d.js",
+    "main.css": "/san-diego-election-tracker/static/css/main.2a329342.css",
+    "main.js": "/san-diego-election-tracker/static/js/main.66961aa6.js",
     "static/js/453.ae619b6b.chunk.js": "/san-diego-election-tracker/static/js/453.ae619b6b.chunk.js",
     "index.html": "/san-diego-election-tracker/index.html",
-    "main.5e44a15b.css.map": "/san-diego-election-tracker/static/css/main.5e44a15b.css.map",
-    "main.e416255d.js.map": "/san-diego-election-tracker/static/js/main.e416255d.js.map",
+    "main.2a329342.css.map": "/san-diego-election-tracker/static/css/main.2a329342.css.map",
+    "main.66961aa6.js.map": "/san-diego-election-tracker/static/js/main.66961aa6.js.map",
     "453.ae619b6b.chunk.js.map": "/san-diego-election-tracker/static/js/453.ae619b6b.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.5e44a15b.css",
-    "static/js/main.e416255d.js"
+    "static/css/main.2a329342.css",
+    "static/js/main.66961aa6.js"
   ]
 }
