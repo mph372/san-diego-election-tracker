@@ -206,3 +206,38 @@ footer {
   background-color: #f2f2f2;
 }
 
+/* Banner section */
+.banner {
+  padding: 15px 0;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 20px;
+}
+
+.banner img {
+  max-height: 100px;
+}
+
+/* Attribution header */
+.attribution-header {
+  margin: 15px auto;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9em;
+  color: #6c757d;
+  max-width: 800px;
+}
+
+.attribution-header p {
+  margin: 0;
+}
+
+.attribution-header a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.attribution-header a:hover {
+  text-decoration: underline;
+}
+

@@ -13,7 +13,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png'
 });
 
-const PrecinctMap = ({ currentBatch }) => {
+const PrecinctMap = ({ metadata, currentBatch }) => {
   const [precinctBoundaries, setPrecinctBoundaries] = useState(null);
   const [precinctResults, setPrecinctResults] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,12 +55,14 @@ const PrecinctMap = ({ currentBatch }) => {
 
   // Load precinct boundaries data
   useEffect(() => {
+    if (!metadata || !metadata.precinctsGeojson) return;
+
     const loadPrecinctBoundaries = async () => {
       try {
         setLoading(true);
         
         // Fetch the precinct boundaries file
-        const response = await fetch(`${process.env.PUBLIC_URL}/data/Election_Precincts_2025_04_08.geojson`);
+        const response = await fetch(`${process.env.PUBLIC_URL}/data/${metadata.precinctsGeojson}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch precinct boundaries: ${response.status} ${response.statusText}`);
@@ -103,19 +105,23 @@ const PrecinctMap = ({ currentBatch }) => {
     };
     
     loadPrecinctBoundaries();
-  }, []);
+  }, [metadata]);
   
   // Load precinct-level election results when currentBatch changes
   useEffect(() => {
-    if (!currentBatch) return;
+    if (!currentBatch || !metadata || !metadata.precinctsResults) {
+      setPrecinctResults(null); // Reset results if no batch or metadata
+      return;
+    }
     
     const loadPrecinctResults = async () => {
       try {
         // Load precinct results file for the current batch
-        const response = await fetch(`${process.env.PUBLIC_URL}/data/precincts_21.csv`);
+        const response = await fetch(`${process.env.PUBLIC_URL}/data/${metadata.precinctsResults}`);
         
         if (!response.ok) {
-          console.log("Precinct results not found");
+          console.log("Precinct results not found, showing map without results.");
+          setPrecinctResults(null);
           return;
         }
         
@@ -205,7 +211,7 @@ const PrecinctMap = ({ currentBatch }) => {
     };
     
     loadPrecinctResults();
-  }, [currentBatch]);
+  }, [metadata, currentBatch]);
 
   // Function to style precincts based on results
   const getPrecinctStyle = (feature) => {
@@ -218,7 +224,7 @@ const PrecinctMap = ({ currentBatch }) => {
       fillOpacity: 0.3
     };
     
-    if (!precinctResults) return defaultStyle;
+    if (!precinctResults || precinctResults.length === 0) return defaultStyle;
     
     // Match precinct with results
     const precinctId = feature.properties.consnum;
@@ -239,26 +245,18 @@ const PrecinctMap = ({ currentBatch }) => {
       };
     }
     
-    // Define softer, easier-on-the-eyes candidate colors
-    const candidateColors = {
-      'CAROLINA CHAVEZ': '#6A9DC8',   // Soft blue
-      'LOUIS A. FUENTES': '#E27D60',  // Muted coral
-      'VIVIAN MORENO': '#85C88A',     // Soft green
-      'LINCOLN PICKARD': '#E8A87C',   // Peach
-      'PALOMA AGUIRRE': '#C38D9E',    // Muted lavender
-      'ELIZABETH EFIRD': '#41B3A3',   // Seafoam green
-      'JOHN MC CANN': '#DAB785'       // Warm beige
-    };
+    const candidateColors = {};
+    if (metadata && metadata.candidates) {
+      metadata.candidates.forEach(c => {
+        candidateColors[c.name] = c.color;
+      });
+    }
     
     // Find the candidate with the most votes
     let leadingCandidate = null;
     let maxVotes = 0;
     
-    // List of candidates to check
-    const candidateNames = [
-      'CAROLINA CHAVEZ', 'LOUIS A. FUENTES', 'VIVIAN MORENO', 
-      'LINCOLN PICKARD', 'PALOMA AGUIRRE', 'ELIZABETH EFIRD', 'JOHN MC CANN'
-    ];
+    const candidateNames = (metadata && metadata.candidates) ? metadata.candidates.map(c => c.name) : [];
     
     // Check each candidate for votes
     candidateNames.forEach(candidate => {
@@ -324,11 +322,7 @@ const PrecinctMap = ({ currentBatch }) => {
     // Add Total Votes
     tooltipContent += `Total Votes: ${precinctResult.TotalVotes || 0}<br><br>`;
     
-    // Candidate names we expect to find
-    const candidateNames = [
-      'CAROLINA CHAVEZ', 'LOUIS A. FUENTES', 'VIVIAN MORENO', 
-      'LINCOLN PICKARD', 'PALOMA AGUIRRE', 'ELIZABETH EFIRD', 'JOHN MC CANN'
-    ];
+    const candidateNames = (metadata && metadata.candidates) ? metadata.candidates.map(c => c.name) : [];
     
     // Create an array of candidates with their votes for sorting
     const candidateResults = candidateNames.map(candidate => {
@@ -392,15 +386,7 @@ const PrecinctMap = ({ currentBatch }) => {
           }}>
             <h4 style={{ marginTop: 0, marginBottom: '10px' }}>Candidate Colors</h4>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {Object.entries({
-                'CAROLINA CHAVEZ': '#6A9DC8',   // Soft blue
-                'LOUIS A. FUENTES': '#E27D60',  // Muted coral
-                'VIVIAN MORENO': '#85C88A',     // Soft green
-                'LINCOLN PICKARD': '#E8A87C',   // Peach
-                'PALOMA AGUIRRE': '#C38D9E',    // Muted lavender
-                'ELIZABETH EFIRD': '#41B3A3',   // Seafoam green
-                'JOHN MC CANN': '#DAB785'       // Warm beige
-              }).map(([candidate, color], index) => (
+              {metadata && metadata.candidates && metadata.candidates.map((candidate, index) => (
                 <div key={index} style={{ 
                   display: 'flex', 
                   alignItems: 'center',
@@ -409,11 +395,11 @@ const PrecinctMap = ({ currentBatch }) => {
                   <div style={{ 
                     width: '20px', 
                     height: '20px', 
-                    backgroundColor: color,
+                    backgroundColor: candidate.color,
                     marginRight: '5px',
                     border: '1px solid #666'
                   }}></div>
-                  <span>{candidate}</span>
+                  <span>{candidate.name}</span>
                 </div>
               ))}
               <div style={{ 

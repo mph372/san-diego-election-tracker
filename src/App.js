@@ -15,16 +15,30 @@ function App() {
 
   return (
     <div className="App">
-      <h1>San Diego County Board of Supervisors - District 1 (Special Election)</h1>
+      <div className="banner">
+        <a 
+          href="https://www.theballotbook.com/?utm_source=election-tracker" 
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          <img 
+            src={`${process.env.PUBLIC_URL}/ballot_book.png`}
+            alt="The Ballot Book"
+          />
+        </a>
+      </div>
+      
+      <h1>San Diego County Board of Supervisors - District 1 (July 1 General Election)</h1>
 
-      <p className="creator-info">
-        Created by Mason Herron. If you have questions or issues, contact{' '}
-        <a href="mailto:mason@edgewater-strategies.com">mason@edgewater-strategies.com</a> or 
-        connect with me on{' '}
-        <a href="https://www.linkedin.com/in/masonherron/" target="_blank" rel="noopener noreferrer">LinkedIn</a>{' '}
-        or{' '}
-        <a href="https://x.com/mason_herron" target="_blank" rel="noopener noreferrer">Twitter</a>
-      </p>
+      <div className="attribution-header">
+        <p>
+          Created by <a href="mailto:mason@edgewater-strategies.com">Mason Herron</a>. 
+          Email with questions, feedback, or other inquiries.
+        </p>
+        <p>
+          Follow <a href="https://x.com/mason_herron" target="_blank" rel="noopener noreferrer">@mason_herron</a> or <a href="https://www.linkedin.com/in/masonherron/" target="_blank" rel="noopener noreferrer">LinkedIn</a>.
+        </p>
+      </div>
 
       <div className="important-links">
         <a href="https://github.com/mph372/san-diego-election-tracker/tree/main/public/data" target="_blank" rel="noopener noreferrer" className="action-link">Download Raw Data</a>

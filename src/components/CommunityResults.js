@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 
-const CommunityResults = ({ currentBatch }) => {
+const CommunityResults = ({ metadata, currentBatch }) => {
   const [communityResults, setCommunityResults] = useState([]);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,11 +10,13 @@ const CommunityResults = ({ currentBatch }) => {
   
   useEffect(() => {
     loadCommunityResults();
-  }, [currentBatch]);
+  }, [metadata, currentBatch]);
   
   const loadCommunityResults = async () => {
-    if (!currentBatch) {
+    if (!currentBatch || !metadata || !metadata.precinctsResults) {
       setLoading(false);
+      setCommunityResults([]);
+      setCommunityList([]);
       return;
     }
     
@@ -22,10 +24,14 @@ const CommunityResults = ({ currentBatch }) => {
       setLoading(true);
       
       // Load precinct results file for the current batch
-      const response = await fetch(`${process.env.PUBLIC_URL}/data/precincts_21.csv`);
+      const response = await fetch(`${process.env.PUBLIC_URL}/data/${metadata.precinctsResults}`);
       
       if (!response.ok) {
-        throw new Error("Failed to load precinct data");
+        setLoading(false);
+        setCommunityResults([]);
+        setCommunityList([]);
+        console.log("Precinct results not found for community view.");
+        return;
       }
       
       const text = await response.text();

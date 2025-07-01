@@ -14,16 +14,12 @@ const ResultsChart = ({ results, metadata, batchesHistory }) => {
     (b['Total Votes'] || 0) - (a['Total Votes'] || 0)
   );
   
-  // Define softer, easier-on-the-eyes candidate colors - same as the map
-  const candidateColors = {
-    'CAROLINA CHAVEZ': '#6A9DC8',   // Soft blue
-    'LOUIS A. FUENTES': '#E27D60',  // Muted coral
-    'VIVIAN MORENO': '#85C88A',     // Soft green
-    'LINCOLN PICKARD': '#E8A87C',   // Peach
-    'PALOMA AGUIRRE': '#C38D9E',    // Muted lavender
-    'ELIZABETH EFIRD': '#41B3A3',   // Seafoam green
-    'JOHN MC CANN': '#DAB785'       // Warm beige
-  };
+  const candidateColors = {};
+  if (metadata && metadata.candidates) {
+    metadata.candidates.forEach(c => {
+      candidateColors[c.name] = c.color;
+    });
+  }
   
   // Fallback colors if we have more candidates than defined colors
   const fallbackColors = [

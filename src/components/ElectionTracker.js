@@ -90,7 +90,8 @@ const ElectionTracker = () => {
           
           setLoading(false);
         } else {
-          throw new Error('No updates found in metadata');
+          // No updates available, so just stop loading and show the default message
+          setLoading(false);
         }
       })
       .catch(err => {
@@ -225,12 +226,13 @@ const ElectionTracker = () => {
             metadata={metadata}
             batchesHistory={batchesHistory} 
           />
-            <PrecinctMap currentBatch={currentBatch} />
-            <CommunityResults currentBatch={currentBatch} />
         </>
       ) : (
         <p>No election results available yet.</p>
       )}
+      
+      <PrecinctMap metadata={metadata} currentBatch={currentBatch} />
+      <CommunityResults metadata={metadata} currentBatch={currentBatch} />
     </div>
   );
 };
