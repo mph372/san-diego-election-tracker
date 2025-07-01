@@ -218,6 +218,12 @@ footer {
   max-height: 100px;
 }
 
+@media (max-width: 768px) {
+  .banner img {
+    max-height: 120px;
+  }
+}
+
 /* Attribution header */
 .attribution-header {
   margin: 15px auto;

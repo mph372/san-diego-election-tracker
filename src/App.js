@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import ElectionTracker from './components/ElectionTracker';
 import { initGA, pageView } from './utils/analytics';
@@ -13,6 +13,17 @@ function App() {
     pageView(window.location.pathname + window.location.search);
   }, []);
 
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // Track window resize for responsive adjustments
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 768;
+
   return (
     <div className="App">
       <div className="banner">
@@ -22,7 +33,7 @@ function App() {
           rel="noopener noreferrer"
         >
           <img 
-            src={`${process.env.PUBLIC_URL}/ballot_book.png`}
+            src={`${process.env.PUBLIC_URL}/ballot_book${isMobile ? '_mobile' : ''}.png`}
             alt="The Ballot Book"
           />
         </a>
